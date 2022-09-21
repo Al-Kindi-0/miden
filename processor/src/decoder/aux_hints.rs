@@ -276,21 +276,30 @@ pub enum OpGroupTableUpdate {
 // ================================================================================================
 
 /// Describes a single entry in the block stack table. An entry in the block stack table is a tuple
-/// (block_id, parent_id, is_loop).
+/// (block_id, parent_id, is_loop, parent_ctx, fmp, stack_depth, next_overflow_addr).
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct BlockStackTableRow {
     block_id: Felt,
     parent_id: Felt,
     is_loop: bool,
+    parent_ctx: u32,
+    fmp: Felt,
+    stack_depth: u32,
+    next_overflow_addr: Felt,
 }
 
 impl BlockStackTableRow {
     /// Returns a new [BlockStackTableRow] instantiated from the specified block info.
     pub fn new(block_info: &BlockInfo) -> Self {
+        let ctx_info = block_info.ctx_info.unwrap_or_default();
         Self {
             block_id: block_info.addr,
             parent_id: block_info.parent_addr,
             is_loop: block_info.is_entered_loop() == ONE,
+            parent_ctx: ctx_info.parent_ctx,
+            fmp: ctx_info.fmp,
+            stack_depth: ctx_info.stack_depth,
+            next_overflow_addr: ctx_info.next_overflow_addr,
         }
     }
 
@@ -302,19 +311,47 @@ impl BlockStackTableRow {
             block_id,
             parent_id,
             is_loop,
+            parent_ctx: 0,
+            fmp: ZERO,
+            stack_depth: 0,
+            next_overflow_addr: ZERO,
+        }
+    }
+
+    #[cfg(test)]
+    /// Returns a new [BlockStackTableRow] corresponding to a CALL code block. This is used for
+    /// test purpose only.
+    pub fn new_test_with_ctx(
+        block_id: Felt,
+        parent_id: Felt,
+        is_loop: bool,
+        ctx_info: super::ExecutionContextInfo,
+    ) -> Self {
+        Self {
+            block_id,
+            parent_id,
+            is_loop,
+            parent_ctx: ctx_info.parent_ctx,
+            fmp: ctx_info.fmp,
+            stack_depth: ctx_info.stack_depth,
+            next_overflow_addr: ctx_info.next_overflow_addr,
         }
     }
 }
 
 impl LookupTableRow for BlockStackTableRow {
     /// Reduces this row to a single field element in the field specified by E. This requires
-    /// at least 4 alpha values.
+    /// at least 8 alpha values.
     fn to_value<E: FieldElement<BaseField = Felt>>(&self, alphas: &[E]) -> E {
         let is_loop = if self.is_loop { ONE } else { ZERO };
         alphas[0]
             + alphas[1].mul_base(self.block_id)
             + alphas[2].mul_base(self.parent_id)
             + alphas[3].mul_base(is_loop)
+            + alphas[4].mul_base(Felt::from(self.parent_ctx))
+            + alphas[5].mul_base(self.fmp)
+            + alphas[6].mul_base(Felt::from(self.stack_depth))
+            + alphas[7].mul_base(self.next_overflow_addr)
     }
 }
 
