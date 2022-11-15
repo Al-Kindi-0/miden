@@ -14,6 +14,12 @@ use vm_core::QuadExtension;
 mod data;
 use data::*;
 
+mod channel;
+pub use channel::*;
+
+mod verifier_fri;
+pub use verifier_fri::*;
+
 type ExtElement = QuadExtension<Felt>;
 
 #[test]
@@ -31,6 +37,7 @@ fn verify() {
     let blowup_exp = 3;
     let (tape, set) = prepare_advice(depth, domain_size, num_queries, blowup_exp);
 
+    let result = fri_prove_verify_(depth, blowup_exp);
     let test = build_test!(source, &[], &tape, set);
 
     test.expect_stack(&[]);
