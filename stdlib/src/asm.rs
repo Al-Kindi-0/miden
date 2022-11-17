@@ -152,19 +152,38 @@ export.verify_query_layer
     
     dropw
     adv.keyval                  # load the leaf values onto the adv tape
-    push.0.0.0.0
-     
-    # Unhash query values
-    adv_loadw                   #[V,V',p%d/2,?,d/2,p,t_d,...]   TODO: replace with adv.keyval
-    dupw movdnw.2               #[V,V',V,p%d/2,?,d/2,p,t_d,...]
-    push.4 push.0.0.0                #[0,0,0,4,V,V',V,p%d/2,?,d/2,p,t_d,...]
-    swapw                       #[V,0,0,0,4,V',V,p%d/2,?,d/2,p,t_d,...]
-    push.0.0.0.0                #[0,0,0,0,V,0,0,0,4,V',V,p%d/2,?,d/2,p,t_d,...]
-    rpperm                      #[K,V',P,V',V,p%d/2,?,d/2,p,t_d,...]
-    dropw                       #[V',P,V',V,p%d/2,?,d/2,p,t_d,...]
-    swapw dropw                 #[V',V',V,p%d/2,?,d/2,p,t_d,...]          
-    eqw 
-    drop dropw dropw            #[V,p%d/2,?,d/2,p,t_d,...]  
+    push.500.4.0.0.0            #[0,0,0,4,500,V',p%d/2,?,d/2,p,t_d,...]
+    push.0.0.0.0.0.0.0.0        #[0,0,0,0,0,0,0,0,0,0,0,4,500,V',p%d/2,?,d/2,p,t_d,...]
+    adv_pipe
+
+
+
+
+    #adv_loadw                   #[V,V',p%d/2,?,d/2,p,t_d,...]   TODO: replace with adv.keyval
+    #dupw movdnw.2               #[V,V',V,p%d/2,?,d/2,p,t_d,...]
+    #push.4 push.0.0.0                #[0,0,0,4,V,V',V,p%d/2,?,d/2,p,t_d,...]
+    #swapw                       #[V,0,0,0,4,V',V,p%d/2,?,d/2,p,t_d,...]
+    #push.0.0.0.0                #[0,0,0,0,V,0,0,0,4,V',V,p%d/2,?,d/2,p,t_d,...]
+    #rpperm                      #[K,V',P,V',V,p%d/2,?,d/2,p,t_d,...]
+    #dropw                       #[V',P,V',V,p%d/2,?,d/2,p,t_d,...]
+    #swapw dropw                 #[V',V',V,p%d/2,?,d/2,p,t_d,...]          
+    #eqw 
+    #drop dropw dropw            #[V,p%d/2,?,d/2,p,t_d,...]  
+
+    ## Unhash query values
+    #push.0.0.0.0
+    #adv_loadw                   #[V,V',p%d/2,?,d/2,p,t_d,...]   TODO: replace with adv.keyval
+    #dupw movdnw.2               #[V,V',V,p%d/2,?,d/2,p,t_d,...]
+    #push.4 push.0.0.0                #[0,0,0,4,V,V',V,p%d/2,?,d/2,p,t_d,...]
+    #swapw                       #[V,0,0,0,4,V',V,p%d/2,?,d/2,p,t_d,...]
+    #push.0.0.0.0                #[0,0,0,0,V,0,0,0,4,V',V,p%d/2,?,d/2,p,t_d,...]
+    #rpperm                      #[K,V',P,V',V,p%d/2,?,d/2,p,t_d,...]
+    #dropw                       #[V',P,V',V,p%d/2,?,d/2,p,t_d,...]
+    #swapw dropw                 #[V',V',V,p%d/2,?,d/2,p,t_d,...]          
+    #eqw 
+    #drop dropw dropw            #[V,p%d/2,?,d/2,p,t_d,...]  
+                    
+                               #[V,p%d/2,?,d/2,p,t_d,...]  
     dupw  movdnw.2              #[v3,v2,v1,v0,p%d/2,?,d/2,p,V,t_d,...]
     movup.2 swap                #[v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
     dup.5                       #[?,v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
