@@ -81,20 +81,49 @@ end
 
 # Input: [t_d,e1,e0,p,d,poe,add',..]
 # Output: [d,p,C,t_d,e1,e0,poe,a1,a0,add'-2,..]
-export.prepare_next
-    push.0.0.0.0                           #[0,0,0,0,t_d,e1,e0,p,d,poe,add',..]
-    movup.10 sub.1 dup                     #[add'-1,add'-1,0,0,0,0,t_d,e1,e0,p,d,poe,..]
-    movdn.11                               #[add'-1,0,0,0,0,t_d,e1,e0,p,d,poe,add'-1,..]
-    mem_loadw drop drop                    #[a1,a0,t_d,e1,e0,p,d,poe,add'-1,..]
-    swapw                                  #[e0,p,d,poe,a,a,t_d,e1,add'-1,..]
-    push.0.0.0.0 movup.12                  #[add'-1,0,0,0,0,e0,p,d,poe,a,a,t_d,e1,..]
-    sub.1 dup                              #[add'-2,add'-2,0,0,0,0,e0,p,d,poe,a,a,t_d,e1,..]
-    movdn.13 mem_loadw                     #[C,e0,p,d,poe,a,a,t_d,e1,add'-2,..]
-    movup.5 movup.6                        #[d,p,C,e0,poe,a,a,t_d,e1,add'-2,..]
-    movup.11                               #[e1,d,p,C,e0,poe,a,a,t_d,add'-2,..]
-    movdn.6                                #[d,p,C,e1,e0,poe,a,a,t_d,add'-2,..]
-    movup.11                               #[t_d,d,p,C,e1,e0,poe,a,a,add'-2,..]
-    movdn.6                                #[d,p,C,t_d,e1,e0,poe,a1,a0,add'-2,..]
+#export.prepare_next
+    #push.0.0.0.0                           #[0,0,0,0,t_d,e1,e0,p,d,poe,add',..]
+    #movup.10 sub.1 dup                     #[add'-1,add'-1,0,0,0,0,t_d,e1,e0,p,d,poe,..]
+    #movdn.11                               #[add'-1,0,0,0,0,t_d,e1,e0,p,d,poe,add'-1,..]
+    #mem_loadw drop drop                    #[a1,a0,t_d,e1,e0,p,d,poe,add'-1,..]
+    #swapw                                  #[e0,p,d,poe,a,a,t_d,e1,add'-1,..]
+    #push.0.0.0.0 movup.12                  #[add'-1,0,0,0,0,e0,p,d,poe,a,a,t_d,e1,..]
+    #sub.1 dup                              #[add'-2,add'-2,0,0,0,0,e0,p,d,poe,a,a,t_d,e1,..]
+    #movdn.13 mem_loadw                     #[C,e0,p,d,poe,a,a,t_d,e1,add'-2,..]
+    #movup.5 movup.6                        #[d,p,C,e0,poe,a,a,t_d,e1,add'-2,..]
+    #movup.11                               #[e1,d,p,C,e0,poe,a,a,t_d,add'-2,..]
+    #movdn.6                                #[d,p,C,e1,e0,poe,a,a,t_d,add'-2,..]
+    #movup.11                               #[t_d,d,p,C,e1,e0,poe,a,a,add'-2,..]
+    #movdn.6                                #[d,p,C,t_d,e1,e0,poe,a1,a0,add'-2,..]
+#end
+
+proc.prepare_next
+    movup.6                               #[add',t_d,e1,e0,p,d,poe,..]
+    sub.2 dup                               #[add'-2,add'-2,t_d,e1,e0,p,d,poe,..]
+    movdn.7                               #[add'-2,t_d,e1,e0,p,d,poe,add'-2,..]
+    push.0.0.0.0                            #[0,0,0,0,add'-2,t_d,e1,e0,p,d,poe,add'-2,..]
+    dup.4 add.1                                  #[add'-1,0,0,0,0,add'-2,t_d,e1,e0,p,d,poe,add'-2,..]
+    mem_loadw                                   #[0,0,a1,a0,add'-2,t_d,e1,e0,p,d,poe,add'-2,..]
+    push.0.0                                #[0,0,0,0,a1,a0,add'-2,t_d,e1,e0,p,d,poe,add'-2,..]
+    movup.6                             #[add'-1,0,0,0,0,a1,a0,t_d,e1,e0,p,d,poe,add'-2,..]
+    mem_loadw                 #[C,a1,a0,t_d,e1,e0,p,d,poe,add'-2,..]
+    swapw.2                 #[e0,p,d,poe,a1,a0,t_d,e1,C,add'-2,..]
+    swap.2                  #[d,p,e0,poe,a1,a0,t_d,e1,C,add'-2,..]
+    movup.7                 #[e1,d,p,e0,poe,a1,a0,t_d,C,add'-2,..]
+    movup.7                 #[t_d,e1,d,p,e0,poe,a1,a0,C,add'-2,..]
+    movupw.2                 #[C,t_d,e1,d,p,e0,poe,a1,a0,add'-2,..]
+    movup.7                 #[p,C,t_d,e1,d,e0,poe,a1,a0,add'-2,..]
+    movup.7                 #[d,p,C,t_d,e1,e0,poe,a1,a0,add'-2,..]
+end
+
+# Input: [v3,v2,v1,v0,..]
+# Output: [w3,w2,w1,w0,v3,v2,v1,v0,..] where (w3,w2) := (v3+v1,v2+v0) and (w1,w0) := (v3-v1,v2-v0)
+proc.compute_add_sub
+    dupw dupw               #[v3,v2,v1,v0,v3,v2,v1,v0,V,..]
+    movup.3 movup.3         #[v1,v0,v3,v2,v3,v2,v1,v0,V,..]
+    exec.ext2::sub          #[w1,w0,v3,v2,v1,v0,V,..]
+    movdn.5 movdn.5         #[v3,v2,v1,v0,w1,w0,V,..]
+    exec.ext2::add          #[w3,w2,w1,w0,V,..]
 end
 
 # The stack starts in the following initial configuration [d,p,C,t_d,e1,e0,poe,a1,a0,..] where d is 
@@ -127,8 +156,6 @@ export.verify_query_layer
     dropw swapw dropw
     eqw 
     drop dropw dropw
-
-
     dupw  movdnw.2              #[v3,v2,v1,v0,p%d/2,?,d/2,p,V,t_d,...]
     movup.2 swap                #[v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
     dup.5                       #[?,v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
@@ -156,6 +183,7 @@ export.verify_query_layer
     movup.3 movup.3
     exec.fold_2                 #[e1,e0,p%d/2,d/2,poe_sq,t_d,..]
     movup.5 u32wrapping_sub.1   #[t_d-1,e1,e0,p%d/2,d/2,poe_sq,add',..]
+    
 
 end
 
@@ -206,6 +234,56 @@ export.verify_remainder_com
     dropw dropw
 end
 
+export.verify
+    push.1
+    while.true
+        dup                         #[add,add,num_q,d,g,t_d,add',...]
+        movdn.6                     #[add,num_q,d,g,t_d,add',add,...]
+        mem_storew                  #[num_q,d,g,t_d,...]
+        push.0.0.0
+        adv_loadw                   #[0,p,e1,e0,d,g,t_d,...]
+        drop                        #[p,e1,e0,d,g,t_d,...]
+        dup                         #[p,p,e1,e0,d,g,t_d,...]
+        movup.5                     #[g,p,p,e1,e0,d,t_d,...]
+        swap exp.u32                #[poe,p,e1,e0,d,t_d,...]
+
+        dup.6                     #[add',poe,p,e1,e0,d,t_d,add',...]
+        sub.1 dup                     #[add'-1,add'-1,poe,p,e1,e0,d,t_d,add',...]
+        movdn.7                     #[add'-1,poe,p,e1,e0,d,t_d,add'-1,add',...]
+        push.0.0.0.0                    #[0,0,0,0,add'-1,poe,p,e1,e0,d,t_d,add'-1,...]
+        dup.4  add.1                  #[add',0,0,0,0,add'-1,poe,p,e1,e0,d,t_d,add'-1,...]
+        mem_loadw                 #[0,0,a1,a0,add'-1,poe,p,e1,e0,d,t_d,add'-1,...]
+        push.0.0                 #[0,0,0,0,a1,a0,add'-1,poe,p,e1,e0,d,t_d,add'-1,...]
+        movup.6                 #[add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
+        mem_loadw                 #[C,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
+
+        
+        swapw.2 swapw  #[a1,a0,poe,p,e1,e0,d,t_d,C,add'-1,...]
+        movup.2                 #[poe,a1,a0,p,e1,e0,d,t_d,C,add'-1,...]
+        movup.5                 #[e0,poe,a1,a0,p,e1,d,t_d,C,add'-1,...]
+        swapw                 #[p,e1,d,t_d,e0,poe,a1,a0,C,add'-1,...]
+        movupw.2                 #[C,p,e1,d,t_d,e0,poe,a1,a0,add'-1,...]
+        movup.4                 #[p,C,e1,d,t_d,e0,poe,a1,a0,add'-1,...]
+        movup.6                 #[d,p,C,e1,t_d,e0,poe,a1,a0,add'-1,...]
+        movup.6                 #[e1,d,p,C,t_d,e0,poe,a1,a0,add'-1,...]
+        movdn.7                 #[d,p,C,t_d,e1,e0,poe,a1,a0,add'-1,...]
+   
+        ## Prepare initial is done for query p
+        # Call verify query full by iterating verify query layer 
+        exec.verify_query
+
+        ## Prepare for next iteration of while loop
+        dup.5               #[add,0,d,g,t_d,add',add,...]
+        mem_loadw  
+        sub.1 
+        dup
+        neq.0    #[?,num_q-1,d,g,t_d,add',add,...]
+        movup.6 swap        #[?,add,num_q-1,d,g,t_d,add',...]
+    end
+
+    exec.verify_remainder_com
+end
+
 
 ##################
 ##################
@@ -226,49 +304,53 @@ export.verify_query_debug
     dup.8 assert_eq
     dup.8 assert_eq
 end
-export.verify
-    push.1
-    while.true
-        dup                         #[add,add,num_q,d,g,t_d,add',...]
-        movdn.6                     #[add,num_q,d,g,t_d,add',add,...]
-        mem_storew                  #[num_q,d,g,t_d,...]
-        push.0.0.0
-        adv_loadw                   #[0,p,e1,e0,d,g,t_d,...]
-        drop                        #[p,e1,e0,d,g,t_d,...]
-        dup                         #[p,p,e1,e0,d,g,t_d,...]
-        movup.5                     #[g,p,p,e1,e0,d,t_d,...]
-        swap exp.u32                #[poe,p,e1,e0,d,t_d,...]  
-        dup.6                       #[add',poe,p,e1,e0,d,t_d,add',...]
-        push.0.0.0.0 dup.4 mem_loadw    #[0,0,a1,a0,add',poe,p,e1,e0,d,t_d,...]
-        drop drop movup.2           #[add',a1,a0,poe,p,e1,e0,d,t_d,...]
-        sub.1                       #[add'-1,a1,a0,poe,p,e1,e0,d,t_d,...] #This is justified by the previous code generating add'
-        push.0.0.0.0                #[0,0,0,0,add'-1,a1,a0,poe,p,e1,e0,d,t_d,...]
-        movup.4 dup                 #[add'-1,add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,...]
-        movdn.13                    #[add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
-        mem_loadw                   #[C,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
-        swapw                       #[a1,a0,poe,p,C,e1,e0,d,t_d,add'-1,...]
-        movup.2                     #[poe,a1,a0,p,C,e1,e0,d,t_d,add'-1,...]
-        movup.9                     #[e0,poe,a1,a0,p,C,e1,d,t_d,add'-1,...]
-        movdnw.2                    #[p,C,e1,d,t_d,e0,poe,a1,a0,add'-1,...]
-        movup.6                     #[d,p,C,e1,t_d,e0,poe,a1,a0,add'-1,...]
-        movup.6                     #[e1,d,p,C,t_d,e0,poe,a1,a0,add'-1,...]
-        movdn.7                     #[d,p,C,t_d,e1,e0,poe,a1,a0,add'-1,...]
 
-        ## Prepare initial is done for query p
-        # Call verify query full by iterating verify query layer 
-        exec.verify_query
 
-        ## Prepare for next iteration of while loop
-        dup.5               #[add,0,d,g,t_d,add',add,...]
-        mem_loadw  
-        u32wrapping_sub.1 
-        dup
-        u32checked_neq.0    #[?,num_q-1,d,g,t_d,add',add,...]
-        movup.6 swap        #[?,add,num_q-1,d,g,t_d,add',...]
-    end
 
-    exec.verify_remainder_com
-end
+
+#export.verify
+    #push.1
+    #while.true
+        #dup                         #[add,add,num_q,d,g,t_d,add',...]
+        #movdn.6                     #[add,num_q,d,g,t_d,add',add,...]
+        #mem_storew                  #[num_q,d,g,t_d,...]
+        #push.0.0.0
+        #adv_loadw                   #[0,p,e1,e0,d,g,t_d,...]
+        #drop                        #[p,e1,e0,d,g,t_d,...]
+        #dup                         #[p,p,e1,e0,d,g,t_d,...]
+        #movup.5                     #[g,p,p,e1,e0,d,t_d,...]
+        #swap exp.u32                #[poe,p,e1,e0,d,t_d,...]  
+        #dup.6                       #[add',poe,p,e1,e0,d,t_d,add',...]
+        #push.0.0.0.0 dup.4 mem_loadw    #[0,0,a1,a0,add',poe,p,e1,e0,d,t_d,...]
+        #drop drop movup.2           #[add',a1,a0,poe,p,e1,e0,d,t_d,...]
+        #sub.1                       #[add'-1,a1,a0,poe,p,e1,e0,d,t_d,...] #This is justified by the previous code generating add'
+        #push.0.0.0.0                #[0,0,0,0,add'-1,a1,a0,poe,p,e1,e0,d,t_d,...]
+        #movup.4 dup                 #[add'-1,add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,...]
+        #movdn.13                    #[add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
+        #mem_loadw                   #[C,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
+        #swapw                       #[a1,a0,poe,p,C,e1,e0,d,t_d,add'-1,...]
+        #movup.2                     #[poe,a1,a0,p,C,e1,e0,d,t_d,add'-1,...]
+        #movup.9                     #[e0,poe,a1,a0,p,C,e1,d,t_d,add'-1,...]
+        #movdnw.2                    #[p,C,e1,d,t_d,e0,poe,a1,a0,add'-1,...]
+        #movup.6                     #[d,p,C,e1,t_d,e0,poe,a1,a0,add'-1,...]
+        #movup.6                     #[e1,d,p,C,t_d,e0,poe,a1,a0,add'-1,...]
+        #movdn.7                     #[d,p,C,t_d,e1,e0,poe,a1,a0,add'-1,...]
+
+        ### Prepare initial is done for query p
+        ## Call verify query full by iterating verify query layer 
+        #exec.verify_query
+
+        ### Prepare for next iteration of while loop
+        #dup.5               #[add,0,d,g,t_d,add',add,...]
+        #mem_loadw  
+        #u32wrapping_sub.1 
+        #dup
+        #u32checked_neq.0    #[?,num_q-1,d,g,t_d,add',add,...]
+        #movup.6 swap        #[?,add,num_q-1,d,g,t_d,add',...]
+    #end
+
+    #exec.verify_remainder_com
+#end
 
 export.verify_debug
     #push.1
