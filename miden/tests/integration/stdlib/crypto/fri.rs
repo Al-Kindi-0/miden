@@ -22,7 +22,7 @@ fn verify() {
         use.std::crypto::fri
         begin
             exec.fri::preprocess
-            exec.fri::verify
+            exec.fri::verify_fri
         end
         ";
     let trace_len_e = 10;
@@ -61,43 +61,6 @@ fn fold_2() {
         "head of tape is {:?}",
         Felt::from_mont(6447149255697623253).as_int()
     );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(137438953440).as_int()
-    );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(35184372080640).as_int()
-    );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(3878014442329970502).as_int()
-    );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(55834574835).as_int()
-    );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(4611686107547959275).as_int()
-    );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(3734006000735813891).as_int()
-    );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(12868826280912211939).as_int()
-    );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(4405967737337273005).as_int()
-    );
-    println!(
-        "head of tape is {:?}",
-        Felt::from_mont(4570290276221272403).as_int()
-    );
-
     // --- simple case ----------------------------------------------------------------------------
     let b = ExtElement::new(
         Felt::new(11306949585462557770),

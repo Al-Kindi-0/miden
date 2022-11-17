@@ -255,7 +255,7 @@ export.verify_remainder_com
     dropw dropw
 end
 
-export.verify
+export.verify_fri
     push.1
     while.true
         dup                         #[add,add,num_q,d,g,t_d,add',...]
