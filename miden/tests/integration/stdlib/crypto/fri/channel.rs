@@ -1,24 +1,25 @@
 use air::{FieldElement, Felt};
 use miden::AdviceSet;
-use winter_fri::{VerifierChannel, FriProof};
-use winter_prover::{crypto::{BatchMerkleProof, Hasher, ElementHasher}, DeserializationError};
+use winter_fri::{FriProof, VerifierError, utils::hash_values};
+use winter_prover::{crypto::{BatchMerkleProof, Hasher, ElementHasher, MerkleTree}, DeserializationError};
+use winter_utils::transpose_slice;
 
-pub trait UnBatch<E: FieldElement>: VerifierChannel<E> {
+pub trait UnBatch<E: FieldElement, H: ElementHasher> {
+
     fn unbatch(
         &mut self,
         positions: &[usize],
         domain_size: usize,
         folding_factor: usize,
-        layer_commitments: Vec<<<Self as VerifierChannel<E>>::Hasher as Hasher>::Digest>,
-    ) -> (Vec<AdviceSet>, Vec<([Felt; 4], Vec<Felt>)>);
+        layer_commitments: Vec<<H as Hasher>::Digest>,
+    ) -> (Vec<AdviceSet>, Vec<([u8; 32], Vec<Felt>)>);
 }
 
 pub struct MidenFriVerifierChannel<E: FieldElement, H: ElementHasher<BaseField = E::BaseField>> {
-    pub layer_commitments: Vec<H::Digest>,
-    pub layer_proofs: Vec<BatchMerkleProof<H>>,
-    pub layer_queries: Vec<Vec<E>>,
+    layer_commitments: Vec<H::Digest>,
+    layer_proofs: Vec<BatchMerkleProof<H>>,
+    layer_queries: Vec<Vec<E>>,
     remainder: Vec<E>,
-    pub num_partitions: usize,
 }
 
 impl<E, H> MidenFriVerifierChannel<E, H>
@@ -36,7 +37,6 @@ where
         domain_size: usize,
         folding_factor: usize,
     ) -> Result<Self, DeserializationError> {
-        let num_partitions = proof.num_partitions();
 
         let remainder = proof.parse_remainder()?;
         let (layer_queries, layer_proofs) =
@@ -47,35 +47,42 @@ where
             layer_proofs,
             layer_queries,
             remainder,
-            num_partitions,
         })
     }
-}
 
-impl<E, H> VerifierChannel<E> for MidenFriVerifierChannel<E, H>
-where
-    E: FieldElement,
-    H: ElementHasher<BaseField = E::BaseField>,
-{
-    type Hasher = H;
-
-    fn read_fri_num_partitions(&self) -> usize {
-        self.num_partitions
+    pub fn take_fri_remainder(&mut self) -> Vec<E> {
+        self.remainder.clone()
     }
 
-    fn read_fri_layer_commitments(&mut self) -> Vec<H::Digest> {
+    pub fn layer_proofs(&mut self) -> Vec<BatchMerkleProof<H>> {
+        self.layer_proofs.drain(..).collect()
+    }
+
+    pub fn layer_queries(&mut self) -> Vec<Vec<E>> {
+        self.layer_queries.clone()
+    }
+
+    pub fn read_fri_layer_commitments(&mut self) -> Vec<H::Digest> {
         self.layer_commitments.drain(..).collect()
     }
 
-    fn take_next_fri_layer_proof(&mut self) -> BatchMerkleProof<H> {
-        self.layer_proofs.remove(0)
-    }
+    pub fn read_remainder<const N: usize>(
+        &mut self,
+        commitment: &<H as Hasher>::Digest,
+    ) -> Result<Vec<E>, VerifierError> {
+        let remainder = self.take_fri_remainder();
 
-    fn take_next_fri_layer_queries(&mut self) -> Vec<E> {
-        self.layer_queries.remove(0)
-    }
+        // build remainder Merkle tree
+        let remainder_values = transpose_slice(&remainder);
+        let hashed_values = hash_values::<H, E, N>(&remainder_values);
+        let remainder_tree = MerkleTree::<H>::new(hashed_values)
+            .map_err(|err| VerifierError::RemainderTreeConstructionFailed(format!("{}", err)))?;
 
-    fn take_fri_remainder(&mut self) -> Vec<E> {
-        self.remainder.clone()
+        // make sure the root of the tree matches the committed root of the last layer
+        if commitment != remainder_tree.root() {
+            return Err(VerifierError::RemainderCommitmentMismatch);
+        }
+
+        Ok(remainder)
     }
 }

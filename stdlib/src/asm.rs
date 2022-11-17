@@ -59,7 +59,7 @@ export.preprocess.1
     dup.5                       #[add,num_q,d,g,t_d,t_d,add,..]
     mem_storew dropw            #[t_d,add,..]
     dup
-    u32checked_neq.3            #[?,t_d-1,add,..]
+    u32checked_neq.3            #[?,t_d,add,..]
     while.true
         push.0.0.0.0
         adv_loadw                       #[C,t_d,add,..]
@@ -121,6 +121,10 @@ export.verify_query_layer
     dup.9                       #[t_d,p%d/2,C,p%d/2,?,d/2,p,t_d,...]
     mtree_get  swapw            #[C,V',p%d/2,?,d/2,p,t_d,...]  V' are the digest of values V = (v3,v2,v1,v0)
     
+    dropw
+    adv.keyval
+    push.0.0.0.0
+     
     # Unhash query values
     adv_loadw                   #[V,V',p%d/2,?,d/2,p,t_d,...]   TODO: replace with adv.keyval
     dupw movdnw.2    
@@ -131,6 +135,7 @@ export.verify_query_layer
     dropw swapw dropw
     eqw 
     drop dropw dropw
+
 
     dupw  movdnw.2              #[v3,v2,v1,v0,p%d/2,?,d/2,p,V,t_d,...]
     movup.2 swap                #[v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
@@ -209,6 +214,22 @@ export.verify_remainder_com
     dropw dropw
 end
 
+export.verify_query_debug
+    exec.verify_query_layer
+    #[t_d-1,e1,e0,p%d/2,d/2,poe_sq,add',..]
+
+    dup u32checked_neq.3
+    while.true
+        exec.prepare_next
+        exec.verify_query_layer
+        dup u32checked_neq.3
+    end
+
+    ## Verify remainder 
+    drop
+    dup.8 assert_eq
+    dup.8 assert_eq
+end
 export.verify
     push.1
     while.true
@@ -251,7 +272,95 @@ export.verify
     end
 
     exec.verify_remainder_com
-end"),
+end
+
+export.verify_debug
+    #push.1
+    #while.true
+        dup                         #[add,add,num_q,d,g,t_d,add',...]
+        movdn.6                     #[add,num_q,d,g,t_d,add',add,...]
+        mem_storew                  #[num_q,d,g,t_d,...]
+        push.0.0.0
+        adv_loadw                   #[0,p,e1,e0,d,g,t_d,...]
+        drop                        #[p,e1,e0,d,g,t_d,...]
+        dup                         #[p,p,e1,e0,d,g,t_d,...]
+        movup.5                     #[g,p,p,e1,e0,d,t_d,...]
+        swap exp.u32                #[poe,p,e1,e0,d,t_d,...]  
+        dup.6                       #[add',poe,p,e1,e0,d,t_d,add',...]
+        push.0.0.0.0 dup.4 mem_loadw    #[0,0,a1,a0,add',poe,p,e1,e0,d,t_d,...]
+        drop drop movup.2           #[add',a1,a0,poe,p,e1,e0,d,t_d,...]
+        sub.1                       #[add'-1,a1,a0,poe,p,e1,e0,d,t_d,...] #This is justified by the previous code generating add'
+        push.0.0.0.0                #[0,0,0,0,add'-1,a1,a0,poe,p,e1,e0,d,t_d,...]
+        movup.4 dup                 #[add'-1,add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,...]
+        movdn.13                    #[add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
+        mem_loadw                   #[C,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
+        swapw                       #[a1,a0,poe,p,C,e1,e0,d,t_d,add'-1,...]
+        movup.2                     #[poe,a1,a0,p,C,e1,e0,d,t_d,add'-1,...]
+        movup.9                     #[e0,poe,a1,a0,p,C,e1,d,t_d,add'-1,...]
+        movdnw.2                    #[p,C,e1,d,t_d,e0,poe,a1,a0,add'-1,...]
+        movup.6                     #[d,p,C,e1,t_d,e0,poe,a1,a0,add'-1,...]
+        movup.6                     #[e1,d,p,C,t_d,e0,poe,a1,a0,add'-1,...]
+        movdn.7                     #[d,p,C,t_d,e1,e0,poe,a1,a0,add'-1,...]
+
+        #exec.verify_query_debug
+
+        ## Prepare initial is done for query p
+        # Call verify query full by iterating verify query layer 
+        exec.verify_query
+
+        ## Prepare for next iteration of while loop
+        dup.5               #[add,0,d,g,t_d,add',add,...]
+        mem_loadw  
+        u32wrapping_sub.1 
+        dup
+        u32checked_neq.0    #[?,num_q-1,d,g,t_d,add',add,...]
+        movup.6 swap        #[?,add,num_q-1,d,g,t_d,add',...]
+
+        drop
+
+        dup                         #[add,add,num_q,d,g,t_d,add',...]
+        movdn.6                     #[add,num_q,d,g,t_d,add',add,...]
+        mem_storew                  #[num_q,d,g,t_d,...]
+        push.0.0.0
+        adv_loadw                   #[0,p,e1,e0,d,g,t_d,...]
+        #drop                        #[p,e1,e0,d,g,t_d,...]
+        #dup                         #[p,p,e1,e0,d,g,t_d,...]
+        #movup.5                     #[g,p,p,e1,e0,d,t_d,...]
+        #swap exp.u32                #[poe,p,e1,e0,d,t_d,...]  
+        #dup.6                       #[add',poe,p,e1,e0,d,t_d,add',...]
+        #push.0.0.0.0 dup.4 mem_loadw    #[0,0,a1,a0,add',poe,p,e1,e0,d,t_d,...]
+        #drop drop movup.2           #[add',a1,a0,poe,p,e1,e0,d,t_d,...]
+        #sub.1                       #[add'-1,a1,a0,poe,p,e1,e0,d,t_d,...] #This is justified by the previous code generating add'
+        #push.0.0.0.0                #[0,0,0,0,add'-1,a1,a0,poe,p,e1,e0,d,t_d,...]
+        #movup.4 dup                 #[add'-1,add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,...]
+        #movdn.13                    #[add'-1,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
+        #mem_loadw                   #[C,a1,a0,poe,p,e1,e0,d,t_d,add'-1,...]
+        #swapw                       #[a1,a0,poe,p,C,e1,e0,d,t_d,add'-1,...]
+        #movup.2                     #[poe,a1,a0,p,C,e1,e0,d,t_d,add'-1,...]
+        #movup.9                     #[e0,poe,a1,a0,p,C,e1,d,t_d,add'-1,...]
+        #movdnw.2                    #[p,C,e1,d,t_d,e0,poe,a1,a0,add'-1,...]
+        #movup.6                     #[d,p,C,e1,t_d,e0,poe,a1,a0,add'-1,...]
+        #movup.6                     #[e1,d,p,C,t_d,e0,poe,a1,a0,add'-1,...]
+        #movdn.7                     #[d,p,C,t_d,e1,e0,poe,a1,a0,add'-1,...]
+
+        ##exec.verify_query_debug
+
+        ### Prepare initial is done for query p
+        ## Call verify query full by iterating verify query layer 
+        #exec.verify_query
+
+        ### Prepare for next iteration of while loop
+        #dup.5               #[add,0,d,g,t_d,add',add,...]
+        #mem_loadw  
+        #u32wrapping_sub.1 
+        #dup
+        #u32checked_neq.0    #[?,num_q-1,d,g,t_d,add',add,...]
+        #movup.6 swap        #[?,add,num_q-1,d,g,t_d,add',...]
+    #end
+
+    #exec.verify_remainder_com
+end
+"),
 // ----- std::crypto::hashes::blake3 --------------------------------------------------------------
 ("std::crypto::hashes::blake3", "# Initializes four memory addresses, provided for storing initial 4x4 blake3 
 # state matrix ( i.e. 16 elements each of 32 -bit ), for computing blake3 2-to-1 hash

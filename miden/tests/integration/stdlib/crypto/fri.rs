@@ -1,18 +1,12 @@
+use std::collections::BTreeMap;
+
 use super::build_test;
 use super::Felt;
 use air::FieldElement;
 use air::StarkField;
 use math::log2;
-use miden::AdviceSet;
 use rand_utils::rand_value;
-use serde_json_any_key::*;
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::Read;
 use vm_core::QuadExtension;
-
-mod data;
-use data::*;
 
 mod channel;
 pub use channel::*;
@@ -31,14 +25,27 @@ fn verify() {
             exec.fri::verify
         end
         ";
-    let depth = 13;
+    let trace_len_e = 10;
+    let blowup_exp = 3;
+    let depth = trace_len_e + blowup_exp;
     let domain_size = 1 << depth;
     let num_queries = 32;
-    let blowup_exp = 3;
-    let (tape, set) = prepare_advice(depth, domain_size, num_queries, blowup_exp);
 
-    let result = fri_prove_verify_(depth, blowup_exp);
-    let test = build_test!(source, &[], &tape, set);
+    let (advice_provider, tape, alphas, commitments) =
+        fri_prove_verify(trace_len_e, blowup_exp).expect("should not panic");
+    //println!("head of tape is {:?}",Felt::from_mont(55834574835).as_int());
+    //let (tape, set) = prepare_advice(depth, domain_size, num_queries, blowup_exp);
+    let tape = prepare_advice_2(
+        depth,
+        domain_size,
+        num_queries,
+        blowup_exp,
+        tape,
+        alphas,
+        commitments,
+    );
+    let advice_map: BTreeMap<[u8; 32], Vec<Felt>> = BTreeMap::from_iter(advice_provider.1);
+    let test = build_test!(source, &[], &tape, advice_provider.0, advice_map);
 
     test.expect_stack(&[]);
 }
@@ -50,6 +57,46 @@ fn fold_2() {
         begin
             exec.fri::fold_2
         end";
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(6447149255697623253).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(137438953440).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(35184372080640).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(3878014442329970502).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(55834574835).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(4611686107547959275).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(3734006000735813891).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(12868826280912211939).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(4405967737337273005).as_int()
+    );
+    println!(
+        "head of tape is {:?}",
+        Felt::from_mont(4570290276221272403).as_int()
+    );
 
     // --- simple case ----------------------------------------------------------------------------
     let b = ExtElement::new(
@@ -246,14 +293,17 @@ fn prepare_next() {
 
 // Helper functions
 
-fn prepare_advice(
+fn prepare_advice_2(
     depth: usize,
     domain_size: u32,
     num_queries: usize,
     blowup_exp: usize,
-) -> (Vec<u64>, Vec<AdviceSet>) {
+    tape_pre: Vec<u64>,
+    alphas: Vec<u64>,
+    com: Vec<u64>,
+) -> Vec<u64> {
     let mut tape = vec![];
-    let com: Vec<u64> = COM.into_iter().flat_map(|a| a.into_iter()).collect();
+    //let com: Vec<u64> = COM.into_iter().flat_map(|a| a.into_iter()).collect();
     let domain_generator = Felt::get_root_of_unity(log2(domain_size as usize)).as_int();
 
     tape.push(depth as u64);
@@ -263,66 +313,13 @@ fn prepare_advice(
 
     for i in (0..(depth - blowup_exp)).rev() {
         tape.extend_from_slice(&com[(4 * i)..(4 * i + 4)]);
-        tape.extend_from_slice(&ALPHAS[(4 * i)..(4 * i + 4)]);
+        tape.extend_from_slice(&alphas[(4 * i)..(4 * i + 4)]);
     }
 
-    tape.push(REMAINDER[0]);
-    tape.push(REMAINDER[1]);
-    tape.extend_from_slice(&ALL_QUERIES[..]);
-    tape.extend_from_slice(&COM[COM.len() - 1]);
+    tape.push(1007627512281099979);
+    tape.push(10306770331341497425);
+    tape.extend_from_slice(&tape_pre[..]);
+    tape.extend_from_slice(&com[(com.len() - 4)..]);
 
-    let mut info_str = String::new();
-
-    let mut f =
-        File::open("./tests/integration/stdlib/crypto/fri/set.txt").expect("Unable to open file");
-    f.read_to_string(&mut info_str)
-        .expect("Unable to read string");
-
-    let map: BTreeMap<Vec<u64>, BTreeMap<u64, Vec<Vec<u64>>>> = json_to_iter(&info_str)
-        .unwrap()
-        .map(|x| x.unwrap())
-        .collect();
-
-    let mut mp_set_all = vec![];
-    let mut depth = depth as u32;
-    for c in COM[..10].iter() {
-        let set = map.get(&c.to_vec()).unwrap();
-        let mut indices = vec![];
-        let mut paths = vec![];
-        let mut values = vec![];
-
-        set.iter().for_each(|(k, v)| {
-            indices.push(*k);
-            paths.push(to_path(&v[1..]));
-            values.push(to_word(&v[0]));
-        });
-        let mp_set = AdviceSet::new_merkle_path_set(indices, values, paths, depth).unwrap();
-
-        depth -= 1;
-        mp_set_all.push(mp_set);
-    }
-
-    (tape, mp_set_all)
-}
-
-fn to_path(v: &[Vec<u64>]) -> Vec<[Felt; 4]> {
-    let mut result = vec![];
-    for v in v.iter() {
-        result.push([
-            Felt::new(v[0]),
-            Felt::new(v[1]),
-            Felt::new(v[2]),
-            Felt::new(v[3]),
-        ])
-    }
-    result
-}
-
-fn to_word(root: &[u64]) -> [Felt; 4] {
-    [
-        Felt::new(root[0]),
-        Felt::new(root[1]),
-        Felt::new(root[2]),
-        Felt::new(root[3]),
-    ]
+    tape
 }
