@@ -5,3 +5,4 @@ mod blake3;
 mod falcon;
 mod keccak256;
 mod sha256;
+mod fri;
