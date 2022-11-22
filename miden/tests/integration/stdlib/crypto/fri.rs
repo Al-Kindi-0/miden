@@ -44,7 +44,13 @@ fn fri_fold2_ext2() {
         remainder,
     );
     let advice_map: BTreeMap<[u8; 32], Vec<Felt>> = BTreeMap::from_iter(advice_provider.1);
-    let test = build_test!(source, &[], &tape, advice_provider.0.clone(), advice_map.clone());
+    let test = build_test!(
+        source,
+        &[],
+        &tape,
+        advice_provider.0.clone(),
+        advice_map.clone()
+    );
 
     test.expect_stack(&[]);
 }
