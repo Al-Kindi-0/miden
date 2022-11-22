@@ -4,8 +4,8 @@ use air::{Felt, FieldElement, StarkField};
 use math::{fft, log2};
 use miden::Digest as MidenDigest;
 use prover::AdviceSet;
-use vm_core::ZERO;
 use vm_core::utils::{group_vector_elements, IntoBytes, RandomCoin};
+use vm_core::ZERO;
 use vm_core::{chiplets::hasher::Hasher as MidenHasher, QuadExtension};
 use winter_fri::{folding::fold_positions, FriOptions, FriProof, VerifierError};
 use winter_fri::{DefaultProverChannel, FriProver};
@@ -16,23 +16,23 @@ use super::channel::UnBatch;
 
 type QuadExt = QuadExtension<Felt>;
 
-pub fn fri_prove_verify(
+pub fn fri_prove_verify_fold2_ext2(
     trace_length_e: usize,
-    lde_blowup_e: usize,
 ) -> Result<
     (
         (Vec<AdviceSet>, Vec<([u8; 32], Vec<Felt>)>),
         Vec<u64>,
         Vec<u64>,
         Vec<u64>,
-        (u64,u64)
+        (u64, u64),
+        usize,
     ),
     VerifierError,
 > {
     let max_remainder_size_e = 3;
     let folding_factor_e = 1;
     let trace_length = 1 << trace_length_e;
-    let lde_blowup = 1 << lde_blowup_e;
+    let lde_blowup = 1 << max_remainder_size_e;
     let max_remainder_size = 1 << max_remainder_size_e;
     let folding_factor = 1 << folding_factor_e;
 
@@ -75,7 +75,16 @@ pub fn fri_prove_verify(
         .collect();
 
     match result {
-        Ok(res) => return Ok((res.0, res.1, res.2, commitments, (remainder[0],remainder[1]))),
+        Ok(res) => {
+            return Ok((
+                res.0,
+                res.1,
+                res.2,
+                commitments,
+                (remainder[0], remainder[1]),
+                positions.len(),
+            ))
+        }
         Err(err) => return Err(err),
     }
 }
@@ -144,11 +153,10 @@ pub fn verify_proof(
 }
 
 impl UnBatch<QuadExt, MidenHasher> for MidenFriVerifierChannel<QuadExt, MidenHasher> {
-    fn unbatch(
+    fn unbatch<const N: usize, const W: usize>(
         &mut self,
         positions_: &[usize],
         domain_size: usize,
-        folding_factor: usize,
         layer_commitments: Vec<MidenDigest>,
     ) -> (Vec<AdviceSet>, Vec<([u8; 32], Vec<Felt>)>) {
         let queries = self.layer_queries().clone();
@@ -160,8 +168,7 @@ impl UnBatch<QuadExt, MidenHasher> for MidenFriVerifierChannel<QuadExt, MidenHas
         let mut sets = vec![];
         let mut layer_proofs = self.layer_proofs();
         for i in 0..depth {
-            let mut folded_positions =
-                fold_positions(&positions, current_domain_size, folding_factor);
+            let mut folded_positions = fold_positions(&positions, current_domain_size, N);
 
             let layer_proof = layer_proofs.remove(0);
 
@@ -195,7 +202,7 @@ impl UnBatch<QuadExt, MidenHasher> for MidenFriVerifierChannel<QuadExt, MidenHas
                 folded_positions.iter_mut().map(|a| *a as u64).collect(),
                 nodes.clone(),
                 paths,
-                (depth + 3 - i) as u32,
+                (depth + W - i) as u32,
             )
             .expect("Should not fail");
 
@@ -206,13 +213,13 @@ impl UnBatch<QuadExt, MidenHasher> for MidenFriVerifierChannel<QuadExt, MidenHas
                 .zip(x.iter())
                 .map(|(a, b)| {
                     let mut value = QuadExt::as_base_elements(b).to_owned();
-                    value.extend([ZERO;4]);
+                    value.extend([ZERO; 4]);
                     adv_key_map.push((a.to_owned().into_bytes(), value));
                 })
                 .collect();
 
             mem::swap(&mut positions, &mut folded_positions);
-            current_domain_size = current_domain_size / folding_factor;
+            current_domain_size = current_domain_size / N;
         }
 
         (sets, adv_key_map)
@@ -287,6 +294,7 @@ impl FriVerifierFold2Ext2 {
         self.domain_size
     }
 
+    /// Verifier in the setting of (folding_factor, blowup_factor, extension_degree) = (2, 8, 2)
     fn verify_fold_2_ext_2(
         &self,
         channel: &mut MidenFriVerifierChannel<QuadExt, MidenHasher>,
@@ -304,10 +312,9 @@ impl FriVerifierFold2Ext2 {
         let positions = positions.to_vec();
         let evaluations = evaluations.to_vec();
         let mut final_pos_eval: Vec<(usize, QuadExt)> = vec![];
-        let advice_provider = channel.unbatch(
+        let advice_provider = channel.unbatch::<2, 3>(
             &positions,
             self.domain_size(),
-            2,
             self.layer_commitments.clone(),
         );
 

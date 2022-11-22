@@ -1,17 +1,17 @@
-
-use air::{FieldElement, Felt};
+use air::{Felt, FieldElement};
 use miden::AdviceSet;
-use winter_fri::{FriProof, VerifierError, utils::hash_values};
-use winter_prover::{crypto::{BatchMerkleProof, Hasher, ElementHasher, MerkleTree}, DeserializationError};
+use winter_fri::{utils::hash_values, FriProof, VerifierError};
+use winter_prover::{
+    crypto::{BatchMerkleProof, ElementHasher, Hasher, MerkleTree},
+    DeserializationError,
+};
 use winter_utils::transpose_slice;
 
 pub trait UnBatch<E: FieldElement, H: ElementHasher> {
-
-    fn unbatch(
+    fn unbatch<const N: usize, const W: usize>(
         &mut self,
         positions: &[usize],
         domain_size: usize,
-        folding_factor: usize,
         layer_commitments: Vec<<H as Hasher>::Digest>,
     ) -> (Vec<AdviceSet>, Vec<([u8; 32], Vec<Felt>)>);
 }
@@ -38,7 +38,6 @@ where
         domain_size: usize,
         folding_factor: usize,
     ) -> Result<Self, DeserializationError> {
-
         let remainder = proof.parse_remainder()?;
         let (layer_queries, layer_proofs) =
             proof.parse_layers::<H, E>(domain_size, folding_factor)?;

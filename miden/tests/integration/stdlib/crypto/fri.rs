@@ -17,7 +17,7 @@ pub use verifier_fri::*;
 type ExtElement = QuadExtension<Felt>;
 
 #[test]
-fn verify() {
+fn fri_fold2_ext2() {
     let source = "
         use.std::crypto::fri
         begin
@@ -25,14 +25,13 @@ fn verify() {
             exec.fri::verify_fri
         end
         ";
-    let trace_len_e = 10;
+    let trace_len_e = 12;
     let blowup_exp = 3;
     let depth = trace_len_e + blowup_exp;
     let domain_size = 1 << depth;
-    let num_queries = 32;
 
-    let (advice_provider, tape, alphas, commitments, remainder) =
-        fri_prove_verify(trace_len_e, blowup_exp).expect("should not panic");
+    let (advice_provider, tape, alphas, commitments, remainder, num_queries) =
+        fri_prove_verify_fold2_ext2(trace_len_e).expect("should not panic");
 
     let tape = prepare_advice(
         depth,
@@ -42,10 +41,10 @@ fn verify() {
         tape,
         alphas,
         commitments,
-        remainder
+        remainder,
     );
     let advice_map: BTreeMap<[u8; 32], Vec<Felt>> = BTreeMap::from_iter(advice_provider.1);
-    let test = build_test!(source, &[], &tape, advice_provider.0, advice_map);
+    let test = build_test!(source, &[], &tape, advice_provider.0.clone(), advice_map.clone());
 
     test.expect_stack(&[]);
 }
@@ -73,7 +72,7 @@ fn fold_2() {
     );
     let d = ExtElement::new(Felt::new(9597810334906255130), Felt::new(0));
     let two = ExtElement::new(Felt::new(2), Felt::new(0));
-    
+
     let arr_a = vec![a];
     let arr_a = ExtElement::as_base_elements(&arr_a);
     let arr_b = vec![b];
@@ -260,7 +259,7 @@ fn prepare_advice(
     tape_pre: Vec<u64>,
     alphas: Vec<u64>,
     com: Vec<u64>,
-    remainder: (u64,u64)
+    remainder: (u64, u64),
 ) -> Vec<u64> {
     let mut tape = vec![];
     let domain_generator = Felt::get_root_of_unity(log2(domain_size as usize)).as_int();
