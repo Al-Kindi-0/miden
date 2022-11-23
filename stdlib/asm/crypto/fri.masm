@@ -115,55 +115,55 @@ end
 #! Output: #[t_d-1,e1,e0,p%d/2,d/2,poe_sq,add',add_f..]
 export.verify_query_layer
     u32unchecked_div.2          #[d/2,p,C,t_d,...]
-    dup                         #[d/2,d/2,p,C,t_d,...]
-    dup.2 swap                  #[d/2,p,d/2,p,C,t_d,...]
-    u32checked_divmod           #[p%d/2,?,d/2,p,C,t_d,...]
-    swapw                       #[C,p%d/2,?,d/2,p,t_d,...]
-    dup.4                       #[p%d/2,C,p%d/2,?,d/2,p,t_d,...]
-    dup.9                       #[t_d,p%d/2,C,p%d/2,?,d/2,p,t_d,...]
-    mtree_get  swapw            #[C,V',p%d/2,?,d/2,p,t_d,...]  V' are the digest of values V = (v3,v2,v1,v0)
+    #dup                         #[d/2,d/2,p,C,t_d,...]
+    #dup.2 swap                  #[d/2,p,d/2,p,C,t_d,...]
+    #u32checked_divmod           #[p%d/2,?,d/2,p,C,t_d,...]
+    #swapw                       #[C,p%d/2,?,d/2,p,t_d,...]
+    #dup.4                       #[p%d/2,C,p%d/2,?,d/2,p,t_d,...]
+    #dup.9                       #[t_d,p%d/2,C,p%d/2,?,d/2,p,t_d,...]
+    #mtree_get  swapw            #[C,V',p%d/2,?,d/2,p,t_d,...]  V' are the digest of values V = (v3,v2,v1,v0)
     
-    dropw
-    adv.keyval                  # load the leaf values onto the adv tape
-                                #[V',p%d/2,?,d/2,p,t_d,e1,e0,poe,a1,a0,add',add_f,...]
+    #dropw
+    #adv.keyval                  # load the leaf values onto the adv tape
+                                ##[V',p%d/2,?,d/2,p,t_d,e1,e0,poe,a1,a0,add',add_f,...]
 
-    dup.15                      #[add_f,V',p%d/2,?,d/2,p,t_d,e1,e0,poe,a1,a0,add',add_f,...]
+    #dup.15                      #[add_f,V',p%d/2,?,d/2,p,t_d,e1,e0,poe,a1,a0,add',add_f,...]
 
-    push.4.0.0.0                #[0,0,0,4,add_f,V',p%d/2,?,d/2,p,t_d,...]
-    push.0.0.0.0.0.0.0.0        #[0,0,0,0,0,0,0,0,0,0,0,4,add_f,V',p%d/2,?,d/2,p,t_d,...]
-    adv_pipe                    #[T,D,S,add_f,V',p%d/2,?,d/2,p,t_d,...]
-    dropw swapw dropw           #[D,add_f,V',p%d/2,?,d/2,p,t_d,...]
-    movup.4  movdn.8            #[D,V',add_f,p%d/2,?,d/2,p,t_d,...]
-    eqw drop dropw movup.4      #[add_f,V',p%d/2,?,d/2,p,t_d,...]
-    sub.2 mem_loadw             #[V,p%d/2,?,d/2,p,t_d,...]
+    #push.4.0.0.0                #[0,0,0,4,add_f,V',p%d/2,?,d/2,p,t_d,...]
+    #push.0.0.0.0.0.0.0.0        #[0,0,0,0,0,0,0,0,0,0,0,4,add_f,V',p%d/2,?,d/2,p,t_d,...]
+    #adv_pipe                    #[T,D,S,add_f,V',p%d/2,?,d/2,p,t_d,...]
+    #dropw swapw dropw           #[D,add_f,V',p%d/2,?,d/2,p,t_d,...]
+    #movup.4  movdn.8            #[D,V',add_f,p%d/2,?,d/2,p,t_d,...]
+    #eqw drop dropw movup.4      #[add_f,V',p%d/2,?,d/2,p,t_d,...]
+    #sub.2 mem_loadw             #[V,p%d/2,?,d/2,p,t_d,...]
 
-    dupw  movdnw.2              #[v3,v2,v1,v0,p%d/2,?,d/2,p,V,t_d,...]
-    movup.2 swap                #[v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
-    dup.5                       #[?,v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
-    cdrop                       #[v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
-    movdn.2                     #[v2,v0,v1,p%d/2,?,d/2,p,V,t_d,...]
-    dup.4                       #[?,v2,v0,v1,p%d/2,?,d/2,p,V,t_d,...]
-    cdrop   swap                #[v1,v0,p%d/2,?,d/2,p,V,t_d,...]
-                                #[v1,v0,p%d/2,?,d/2,p,V,t_d,e1,e0..]
-    dup                         #[v1,v1,v0,p%d/2,?,d/2,p,V,t_d,e1,e0..]
-    movup.12                    #[e1,v1,v1,v0,p%d/2,?,d/2,p,t_d,e0..]
-    assert_eq                   #[v1,v0,p%d/2,?,d/2,p,V,t_d,e0..]
-    dup.1                       #[v0,v1,v0,p%d/2,?,d/2,p,V,t_d,e0..]
-    movup.12                    #[e0,v0,v1,v0,p%d/2,?,d/2,p,V,t_d..]
-    assert_eq                   #[v1,v0,p%d/2,?,d/2,p,V,t_d,poe,..] #poe is position in the exponent
-    drop drop swapw             #[V,p%d/2,?,d/2,p,t_d,poe,..]
-    movup.9                     #[poe,V,p%d/2,?,d/2,p,t_d,..]
-    dup                         #[poe,poe,V,p%d/2,?,d/2,p,t_d,..]
-    movup.7                     #[?,poe,poe,V,p%d/2,d/2,p,t_d,..]
-    exec.next_pos_exp           #[poe_sq,xs,V,p%d/2,d/2,p,t_d,..]
-    swap.8 drop                 #[xs,V,p%d/2,d/2,poe_sq,t_d,..]
-    push.0                      #[0,xs,V,p%d/2,d/2,poe_sq,t_d,..]
-                                #[0,xs,V,p%d/2,d/2,poe_sq,t_d,a1,a0,..]
-    movup.11 movup.11           #[a1,a0,0,xs,v3,v2,v1,v0,p%d/2,d/2,poe_sq,t_d,..]   
-    swapw                       #[v3,v2,v1,v0,a1,a0,0,xs,p%d/2,d/2,poe_sq,t_d,..] #Should simplify fri since d1 is always equal to zero
-    movup.3 movup.3
-    exec.fold_2                 #[e1,e0,p%d/2,d/2,poe_sq,t_d,..]
-    movup.5 u32wrapping_sub.1   #[t_d-1,e1,e0,p%d/2,d/2,poe_sq,add',..]
+    #dupw  movdnw.2              #[v3,v2,v1,v0,p%d/2,?,d/2,p,V,t_d,...]
+    #movup.2 swap                #[v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
+    #dup.5                       #[?,v3,v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
+    #cdrop                       #[v1,v2,v0,p%d/2,?,d/2,p,V,t_d,...]
+    #movdn.2                     #[v2,v0,v1,p%d/2,?,d/2,p,V,t_d,...]
+    #dup.4                       #[?,v2,v0,v1,p%d/2,?,d/2,p,V,t_d,...]
+    #cdrop   swap                #[v1,v0,p%d/2,?,d/2,p,V,t_d,...]
+                                ##[v1,v0,p%d/2,?,d/2,p,V,t_d,e1,e0..]
+    #dup                         #[v1,v1,v0,p%d/2,?,d/2,p,V,t_d,e1,e0..]
+    #movup.12                    #[e1,v1,v1,v0,p%d/2,?,d/2,p,t_d,e0..]
+    #assert_eq                   #[v1,v0,p%d/2,?,d/2,p,V,t_d,e0..]
+    #dup.1                       #[v0,v1,v0,p%d/2,?,d/2,p,V,t_d,e0..]
+    #movup.12                    #[e0,v0,v1,v0,p%d/2,?,d/2,p,V,t_d..]
+    #assert_eq                   #[v1,v0,p%d/2,?,d/2,p,V,t_d,poe,..] #poe is position in the exponent
+    #drop drop swapw             #[V,p%d/2,?,d/2,p,t_d,poe,..]
+    #movup.9                     #[poe,V,p%d/2,?,d/2,p,t_d,..]
+    #dup                         #[poe,poe,V,p%d/2,?,d/2,p,t_d,..]
+    #movup.7                     #[?,poe,poe,V,p%d/2,d/2,p,t_d,..]
+    #exec.next_pos_exp           #[poe_sq,xs,V,p%d/2,d/2,p,t_d,..]
+    #swap.8 drop                 #[xs,V,p%d/2,d/2,poe_sq,t_d,..]
+    #push.0                      #[0,xs,V,p%d/2,d/2,poe_sq,t_d,..]
+                                ##[0,xs,V,p%d/2,d/2,poe_sq,t_d,a1,a0,..]
+    #movup.11 movup.11           #[a1,a0,0,xs,v3,v2,v1,v0,p%d/2,d/2,poe_sq,t_d,..]   
+    #swapw                       #[v3,v2,v1,v0,a1,a0,0,xs,p%d/2,d/2,poe_sq,t_d,..] #Should simplify fri since d1 is always equal to zero
+    #movup.3 movup.3
+    #exec.fold_2                 #[e1,e0,p%d/2,d/2,poe_sq,t_d,..]
+    #movup.5 u32wrapping_sub.1   #[t_d-1,e1,e0,p%d/2,d/2,poe_sq,add',..]
     
 
 end
@@ -179,17 +179,17 @@ export.verify_query
     exec.verify_query_layer
     #[t_d-1,e1,e0,p%d/2,d/2,poe_sq,add',..]
 
-    dup u32checked_neq.3
-    while.true
-        exec.prepare_next
-        exec.verify_query_layer
-        dup u32checked_neq.3
-    end
+    #dup u32checked_neq.3
+    #while.true
+        #exec.prepare_next
+        #exec.verify_query_layer
+        #dup u32checked_neq.3
+    #end
 
-    ## Verify remainder 
-    drop
-    dup.8 assert_eq
-    dup.8 assert_eq
+    ### Verify remainder 
+    #drop
+    #dup.8 assert_eq
+    #dup.8 assert_eq
 end
 
 #! Verify that the hash of the remainder codeword is equal to the commitment provided by the prover
@@ -228,8 +228,8 @@ end
 #! Input: #[add_i,num_q,d,g,t_d,add_f,...]
 #! Output: ()
 export.verify_fri
-    push.1
-    while.true
+    #push.1
+    #while.true
         dup                         #[add_i,add_i,num_q,d,g,t_d,add_f,...]
         movdn.6                     #[add_i,num_q,d,g,t_d,add_f,add_i,...]
         mem_storew                  #[num_q,d,g,t_d,...]
@@ -238,42 +238,43 @@ export.verify_fri
         drop                        #[p,e1,e0,d,g,t_d,...]
         dup                         #[p,p,e1,e0,d,g,t_d,...]
         movup.5                     #[g,p,p,e1,e0,d,t_d,...]
-        swap exp.u32                #[poe,p,e1,e0,d,t_d,...]
-
-        dup.6                       #[add_f,poe,p,e1,e0,d,t_d,add_f,...]
-        sub.2 dup                   #[add_f - 2,add_f - 2,poe,p,e1,e0,d,t_d,add_f,...]
-        movdn.7                     #[add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,add_f,...]
-        push.0.0.0.0                #[0,0,0,0,add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,...]
-        dup.4  add.1                #[add_f - 1,0,0,0,0,add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,...]
-        mem_loadw                   #[0,0,a1,a0,add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,...]
-        push.0.0                    #[0,0,0,0,a1,a0,add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,...]
-        movup.6                     #[add_f - 2,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,add_f - 2,...]
-        mem_loadw                   #[C,a1,a0,poe,p,e1,e0,d,t_d,add_f - 2,...]
+        swap                        #[p,g,p,e1,e0,d,t_d,...]
+        exp.u32                #[poe,p,e1,e0,d,t_d,...]
+                
+        #dup.6                       #[add_f,poe,p,e1,e0,d,t_d,add_f,...]
+        #sub.2 dup                   #[add_f - 2,add_f - 2,poe,p,e1,e0,d,t_d,add_f,...]
+        #movdn.7                     #[add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,add_f,...]
+        #push.0.0.0.0                #[0,0,0,0,add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,...]
+        #dup.4  add.1                #[add_f - 1,0,0,0,0,add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,...]
+        #mem_loadw                   #[0,0,a1,a0,add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,...]
+        #push.0.0                    #[0,0,0,0,a1,a0,add_f - 2,poe,p,e1,e0,d,t_d,add_f - 2,...]
+        #movup.6                     #[add_f - 2,0,0,0,0,a1,a0,poe,p,e1,e0,d,t_d,add_f - 2,...]
+        #mem_loadw                   #[C,a1,a0,poe,p,e1,e0,d,t_d,add_f - 2,...]
 
         
-        swapw.2 swapw           #[a1,a0,poe,p,e1,e0,d,t_d,C,add_f - 2,...]
-        movup.2                 #[poe,a1,a0,p,e1,e0,d,t_d,C,add_f - 2,...]
-        movup.5                 #[e0,poe,a1,a0,p,e1,d,t_d,C,add_f - 2,...]
-        swapw                   #[p,e1,d,t_d,e0,poe,a1,a0,C,add_f - 2,...]
-        movupw.2                #[C,p,e1,d,t_d,e0,poe,a1,a0,add_f - 2,...]
-        movup.4                 #[p,C,e1,d,t_d,e0,poe,a1,a0,add_f - 2,...]
-        movup.6                 #[d,p,C,e1,t_d,e0,poe,a1,a0,add_f - 2,...]
-        movup.6                 #[e1,d,p,C,t_d,e0,poe,a1,a0,add_f - 2,...]
-        movdn.7                 #[d,p,C,t_d,e1,e0,poe,a1,a0,add_f - 2,add_f,add_i,...]
+        #swapw.2 swapw           #[a1,a0,poe,p,e1,e0,d,t_d,C,add_f - 2,...]
+        #movup.2                 #[poe,a1,a0,p,e1,e0,d,t_d,C,add_f - 2,...]
+        #movup.5                 #[e0,poe,a1,a0,p,e1,d,t_d,C,add_f - 2,...]
+        #swapw                   #[p,e1,d,t_d,e0,poe,a1,a0,C,add_f - 2,...]
+        #movupw.2                #[C,p,e1,d,t_d,e0,poe,a1,a0,add_f - 2,...]
+        #movup.4                 #[p,C,e1,d,t_d,e0,poe,a1,a0,add_f - 2,...]
+        #movup.6                 #[d,p,C,e1,t_d,e0,poe,a1,a0,add_f - 2,...]
+        #movup.6                 #[e1,d,p,C,t_d,e0,poe,a1,a0,add_f - 2,...]
+        #movdn.7                 #[d,p,C,t_d,e1,e0,poe,a1,a0,add_f - 2,add_f,add_i,...]
 
-        ## Prepare initial is done for query p
-        # Call verify query full by iterating verify query layer 
-        exec.verify_query
+        ### Prepare initial is done for query p
+        ## Call verify query full by iterating verify query layer 
+        #exec.verify_query
 
-        ## Prepare for next iteration of while loop
-        #[p%d/2,d/2,poe_sq,add_i + 1,add_f,add_i,rem1,rem0...]
-        dup.5                  #[add_i,p%d/2,d/2,poe_sq,add_i + 1,add_f,add_i,rem1,rem0...]
-        mem_loadw
-        sub.1 
-        dup
-        neq.0                  #[?,num_q-1,d,g,t_d,add_f,add_i,rem1,rem0,...]
-        movup.6 swap           #[?,add_i,num_q-1,d,g,t_d,add_f,rem1,rem0,...]
-    end
+        ### Prepare for next iteration of while loop
+        ##[p%d/2,d/2,poe_sq,add_i + 1,add_f,add_i,rem1,rem0...]
+        #dup.5                  #[add_i,p%d/2,d/2,poe_sq,add_i + 1,add_f,add_i,rem1,rem0...]
+        #mem_loadw
+        #sub.1 
+        #dup
+        #neq.0                  #[?,num_q-1,d,g,t_d,add_f,add_i,rem1,rem0,...]
+        #movup.6 swap           #[?,add_i,num_q-1,d,g,t_d,add_f,rem1,rem0,...]
+    #end
 
-    exec.verify_remainder_com
+    #exec.verify_remainder_com
 end

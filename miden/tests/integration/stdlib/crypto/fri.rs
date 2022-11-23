@@ -51,7 +51,6 @@ fn fri_fold2_ext2() {
         advice_provider.0.clone(),
         advice_map.clone()
     );
-
     test.expect_stack(&[]);
 }
 
