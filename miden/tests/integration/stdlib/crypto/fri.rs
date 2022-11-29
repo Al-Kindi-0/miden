@@ -14,6 +14,9 @@ pub use channel::*;
 mod verifier_fri;
 pub use verifier_fri::*;
 
+mod verifier_fri_e2f4;
+pub use verifier_fri_e2f4::*;
+
 type ExtElement = QuadExtension<Felt>;
 
 #[test]
@@ -31,7 +34,8 @@ fn fri_fold2_ext2() {
     let domain_size = 1 << depth;
 
     let (advice_provider, tape, alphas, commitments, remainder, num_queries) =
-        fri_prove_verify_fold2_ext2(trace_len_e).expect("should not panic");
+       fri_prove_verify_fold2_ext2(trace_len_e).expect("should not panic");
+
 
     let tape = prepare_advice(
         depth,
@@ -52,6 +56,19 @@ fn fri_fold2_ext2() {
         advice_map.clone()
     );
     test.expect_stack(&[]);
+}
+#[test]
+fn fri_fold4_ext2() {
+    
+    let trace_len_e = 12;
+    //let blowup_exp = 3;
+    //let depth = trace_len_e + blowup_exp;
+    //let domain_size = 1 << depth;
+
+
+    let _ =
+        fri_prove_verify_fold4_ext2(trace_len_e).expect("should not panic");
+
 }
 
 #[test]
