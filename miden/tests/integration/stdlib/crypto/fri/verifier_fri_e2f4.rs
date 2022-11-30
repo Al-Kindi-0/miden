@@ -311,10 +311,12 @@ fn verify_remainder(
     remainder: Vec<QuadExtension<Felt>>,
     degree_bound: usize,
 ) -> bool {
+
+    // This is the non-deterministic input computation step
     let inv_twiddles = fft::get_inv_twiddles(remainder.len());
     let mut result = remainder.clone();
     fft::interpolate_poly(&mut result, &inv_twiddles);
-    println!("{:?}",result);
+    
 
     let tau = QuadExtension::new(rand_utils::rand_value(),rand_utils::rand_value());
     let lhs: QuadExtension<Felt> = barycentric_evaluation(&remainder, domain_generator.inv(), tau);
