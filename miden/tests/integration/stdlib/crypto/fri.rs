@@ -57,17 +57,19 @@ fn fri_fold2_ext2() {
     );
     test.expect_stack(&[]);
 }
+
 #[test]
 fn fri_fold4_ext2() {
     
     let trace_len_e = 12;
+    let max_remainder_size_e = 6;
     //let blowup_exp = 3;
     //let depth = trace_len_e + blowup_exp;
     //let domain_size = 1 << depth;
 
 
     let _ =
-        fri_prove_verify_fold4_ext2(trace_len_e).expect("should not panic");
+        fri_prove_verify_fold4_ext2(trace_len_e, max_remainder_size_e).expect("should not panic");
 
 }
 

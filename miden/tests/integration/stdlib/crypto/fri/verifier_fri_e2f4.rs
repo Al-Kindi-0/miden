@@ -1,13 +1,14 @@
-use std::{marker::PhantomData};
+use std::marker::PhantomData;
 
 use air::{Felt, FieldElement, StarkField};
-use math::{fft, log2};
+use math::{fft, log2, polynom};
 use miden::Digest as MidenDigest;
 use prover::AdviceSet;
 use vm_core::utils::{IntoBytes, RandomCoin};
+use vm_core::ExtensionOf;
 use vm_core::{chiplets::hasher::Hasher as MidenHasher, QuadExtension};
-use winter_fri::{FriOptions, FriProof, VerifierError};
 use winter_fri::{DefaultProverChannel, FriProver};
+use winter_fri::{FriOptions, FriProof, VerifierError};
 use winter_prover::crypto::Hasher;
 
 use super::channel::MidenFriVerifierChannel;
@@ -17,6 +18,7 @@ type QuadExt = QuadExtension<Felt>;
 
 pub fn fri_prove_verify_fold4_ext2(
     trace_length_e: usize,
+    max_remainder_size_e: usize,
 ) -> Result<
     (
         (Vec<AdviceSet>, Vec<([u8; 32], Vec<Felt>)>),
@@ -28,10 +30,10 @@ pub fn fri_prove_verify_fold4_ext2(
     ),
     VerifierError,
 > {
-    let max_remainder_size_e = 3;
+    //let max_remainder_size_e = 3;
     let folding_factor_e = 2;
     let trace_length = 1 << trace_length_e;
-    let lde_blowup = 1 << max_remainder_size_e;
+    let lde_blowup = 1 << 3;
     let max_remainder_size = 1 << max_remainder_size_e;
     let folding_factor = 1 << folding_factor_e;
 
@@ -151,7 +153,6 @@ fn verify_proof(
     Ok(result)
 }
 
-
 /// Partial implementation for verification in the case of folding factor 4
 
 pub struct FriVerifierFold4Ext2 {
@@ -160,6 +161,7 @@ pub struct FriVerifierFold4Ext2 {
     layer_commitments: Vec<MidenDigest>,
     layer_alphas: Vec<QuadExt>,
     options: FriOptions,
+    max_poly_degree: usize,
     _channel: PhantomData<MidenFriVerifierChannel<QuadExt, MidenHasher>>,
 }
 
@@ -206,6 +208,7 @@ impl FriVerifierFold4Ext2 {
             layer_commitments,
             layer_alphas,
             options,
+            max_poly_degree,
             _channel: PhantomData,
         })
     }
@@ -279,8 +282,85 @@ impl FriVerifierFold4Ext2 {
             }
         }
 
-        Ok((advice_provider, full_tape, all_alphas))
+        // Verify the degree of the remainder polynomial
+        let mut final_max_poly_degree_plus_1 = self.max_poly_degree + 1;
+        final_max_poly_degree_plus_1 /=
+            (4 as usize).pow(self.options.num_fri_layers(self.domain_size) as u32);
+        let final_domain_generator = self.domain_generator.exp(
+            ((4 as usize).pow(self.options.num_fri_layers(self.domain_size) as u32) as u32).into(),
+        );
+
+        let remainder_verification = verify_remainder(
+            final_domain_generator,
+            remainder,
+            final_max_poly_degree_plus_1 - 1,
+        );
+
+        if remainder_verification {
+            Ok((advice_provider, full_tape, all_alphas))
+        } else {
+            Err(VerifierError::RemainderDegreeMismatch(
+                final_max_poly_degree_plus_1 - 1,
+            ))
+        }
     }
+}
+
+fn verify_remainder(
+    domain_generator: Felt,
+    remainder: Vec<QuadExtension<Felt>>,
+    degree_bound: usize,
+) -> bool {
+    let inv_twiddles = fft::get_inv_twiddles(remainder.len());
+    let mut result = remainder.clone();
+    fft::interpolate_poly(&mut result, &inv_twiddles);
+    println!("{:?}",result);
+
+    let tau = QuadExtension::new(rand_utils::rand_value(),rand_utils::rand_value());
+    let lhs: QuadExtension<Felt> = barycentric_evaluation(&remainder, domain_generator.inv(), tau);
+    let rhs: QuadExtension<Felt> = eval_horner::<QuadExtension<Felt>>(&result, tau);
+
+    // Probabilistic iNTT
+    // This assertion combined with the number of non-zero values in result being less than degree_bound
+    // gives us, with high confidence, that the remainder is a polynomial of degree less than degree_bound.
+    assert_eq!(lhs,rhs);
+
+    // make sure the degree is valid
+    if degree_bound < polynom::degree_of(&result) {
+        false
+    } else {
+        true
+    }
+}
+
+pub fn eval_horner<E>(p: &[E], x: E) -> E
+where
+    E: FieldElement + From<Felt>,
+{
+    p.iter()
+        .rev()
+        .fold(E::ZERO, |acc, &coeff| acc * x + coeff)
+}
+
+fn barycentric_evaluation(
+    values: &Vec<QuadExtension<Felt>>,
+    omega: Felt,
+    tau: QuadExtension<Felt>,
+) -> QuadExtension<Felt> {
+    let mut norm = QuadExtension::ZERO;
+    let mut result = QuadExtension::ZERO;
+    let one = QuadExtension::ONE;
+    let mut omega_j = Felt::ONE;
+
+    for v in values.iter() {
+        let tmp = one / (tau.mul_base(omega_j) - one);
+        norm += tmp;
+        result += *v * tmp;
+        omega_j *= omega;
+    }
+    result /= norm;
+
+    result
 }
 
 fn iterate_query_fold_4_quad_ext(
@@ -360,7 +440,8 @@ fn iterate_query_fold_4_quad_ext(
             0 => init_exp,
             1 => init_exp * norm_cst,
             2 => init_exp * (norm_cst * norm_cst),
-            _ => init_exp * (norm_cst * norm_cst * norm_cst),
+            3 => init_exp * (norm_cst * norm_cst * norm_cst),
+            _ => unreachable!(),
         } * domain_offset;
 
         init_exp = init_exp * init_exp * init_exp * init_exp;
@@ -377,13 +458,16 @@ fn iterate_query_fold_4_quad_ext(
             let f_x = query_values[1];
             let alpha = layer_alphas[depth];
 
-            let tmp1 = fri_2(f_x, f_minus_x, x_star * QuadExt::from(norm_cst.inv()), alpha);
+            let tmp1 = fri_2(
+                f_x,
+                f_minus_x,
+                x_star * QuadExt::from(norm_cst.inv()),
+                alpha,
+            );
 
             fri_2(tmp0, tmp1, x_star * x_star, alpha * alpha)
         };
 
-        
-        
         let arr = vec![layer_alphas[depth]];
         let a = QuadExt::as_base_elements(&arr);
         alphas.push(a[0].as_int());
