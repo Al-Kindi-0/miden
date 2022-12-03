@@ -61,7 +61,7 @@ fn fri_fold2_ext2() {
 #[test]
 fn fri_fold4_ext2() {
     
-    let trace_len_e = 12;
+    let trace_len_e = 13;
     let max_remainder_size_e = 6;
     //let blowup_exp = 3;
     //let depth = trace_len_e + blowup_exp;

@@ -311,21 +311,19 @@ fn verify_remainder(
     remainder: Vec<QuadExtension<Felt>>,
     degree_bound: usize,
 ) -> bool {
-
     // This is the non-deterministic input computation step
     let inv_twiddles = fft::get_inv_twiddles(remainder.len());
     let mut result = remainder.clone();
     fft::interpolate_poly(&mut result, &inv_twiddles);
-    
 
-    let tau = QuadExtension::new(rand_utils::rand_value(),rand_utils::rand_value());
+    let tau = QuadExtension::new(rand_utils::rand_value(), rand_utils::rand_value());
     let lhs: QuadExtension<Felt> = barycentric_evaluation(&remainder, domain_generator.inv(), tau);
     let rhs: QuadExtension<Felt> = eval_horner::<QuadExtension<Felt>>(&result, tau);
 
     // Probabilistic iNTT
     // This assertion combined with the number of non-zero values in result being less than degree_bound
     // gives us, with high confidence, that the remainder is a polynomial of degree less than degree_bound.
-    assert_eq!(lhs,rhs);
+    assert_eq!(lhs, rhs);
 
     // make sure the degree is valid
     if degree_bound < polynom::degree_of(&result) {
@@ -339,9 +337,7 @@ pub fn eval_horner<E>(p: &[E], x: E) -> E
 where
     E: FieldElement + From<Felt>,
 {
-    p.iter()
-        .rev()
-        .fold(E::ZERO, |acc, &coeff| acc * x + coeff)
+    p.iter().rev().fold(E::ZERO, |acc, &coeff| acc * x + coeff)
 }
 
 fn barycentric_evaluation(
@@ -381,8 +377,8 @@ fn iterate_query_fold_4_quad_ext(
     let domain_offset = Felt::GENERATOR;
 
     let initial_domain_generator = *domain_generator;
-    let norm_cst = Felt::get_root_of_unity(2).inv();
-    let mut init_exp = initial_domain_generator.exp((position as u64).into());
+    let tau = Felt::get_root_of_unity(2);
+    let mut poe = initial_domain_generator.exp((position as u64).into());
 
     let arr = vec![evaluation];
     let a = QuadExt::as_base_elements(&arr);
@@ -438,37 +434,50 @@ fn iterate_query_fold_4_quad_ext(
             return Err(VerifierError::InvalidLayerFolding(depth));
         }
 
-        let xs_new = match cur_pos / target_domain_size {
-            0 => init_exp,
-            1 => init_exp * norm_cst,
-            2 => init_exp * (norm_cst * norm_cst),
-            3 => init_exp * (norm_cst * norm_cst * norm_cst),
+        let x = match cur_pos / target_domain_size {
+            0 => poe,
+            1 => poe / tau,
+            2 => poe / (tau * tau),
+            3 => poe / (tau * tau * tau),
             _ => unreachable!(),
         } * domain_offset;
 
-        init_exp = init_exp * init_exp * init_exp * init_exp;
 
         evaluation = {
-            let f_minus_x = query_values[2];
             let f_x = query_values[0];
-            let x_star = QuadExt::from(xs_new);
+            let f_minus_x = query_values[2];
             let alpha = layer_alphas[depth];
 
-            let tmp0 = fri_2(f_x, f_minus_x, x_star, alpha);
+            let evaluation_point = alpha.mul_base(x.inv());
+            let tmp0 = fri_2(f_x, f_minus_x, evaluation_point);
 
-            let f_minus_x = query_values[3];
             let f_x = query_values[1];
-            let alpha = layer_alphas[depth];
+            let f_minus_x = query_values[3];
 
-            let tmp1 = fri_2(
-                f_x,
-                f_minus_x,
-                x_star * QuadExt::from(norm_cst.inv()),
-                alpha,
-            );
+            let tmp1 = fri_2(f_x, f_minus_x, evaluation_point.mul_base(tau.inv()));
 
-            fri_2(tmp0, tmp1, x_star * x_star, alpha * alpha)
+            fri_2(tmp0, tmp1, evaluation_point * evaluation_point)
         };
+
+        let evaluation_barycentric = {
+            let ys = query_values.clone();
+
+            let alpha = layer_alphas[depth];
+            let one = QuadExt::ONE;
+            let x = x.clone();
+
+            let result = ys.iter().enumerate().fold(QuadExt::ZERO, |acc, (i, y)| {
+                let denom = (x * tau.exp((i as u32).into())).inv();
+                acc + *y / (alpha.mul_base(denom) - one)
+            });
+
+            let norm = ((alpha.mul_base(x.inv())).exp(4_u64.into()) - one)
+                .mul_base(Felt::new(4_u64).inv());
+
+            norm * result
+        };
+
+        assert_eq!(evaluation, evaluation_barycentric);
 
         let arr = vec![layer_alphas[depth]];
         let a = QuadExt::as_base_elements(&arr);
@@ -477,6 +486,7 @@ fn iterate_query_fold_4_quad_ext(
         alphas.push(0);
         alphas.push(0);
 
+        poe = poe * poe * poe * poe;
         *domain_generator = (*domain_generator).exp((4 as u32).into());
         cur_pos = folded_pos;
         domain_size /= 4;
@@ -486,10 +496,10 @@ fn iterate_query_fold_4_quad_ext(
 }
 
 // Helper function
-fn fri_2<E, B>(f_x: E, f_minus_x: E, x_star: E, alpha: E) -> E
+fn fri_2<E, B>(f_x: E, f_minus_x: E, evaluation_point: E) -> E
 where
     B: StarkField,
     E: FieldElement<BaseField = B>,
 {
-    (f_x + f_minus_x + ((f_x - f_minus_x) * alpha / x_star)) / E::ONE.double()
+    (f_x + f_minus_x + ((f_x - f_minus_x) * evaluation_point)) / E::ONE.double()
 }
